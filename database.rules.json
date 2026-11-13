@@ -1,0 +1,49 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "ninthRooms": {
+      "$room": {
+        ".write": "auth != null && data.exists() && !newData.exists() && data.child('header/host').val() === auth.uid && (data.child('closed').val() === true || data.child('header/created').val() + 1500000 < now)",
+        "header": {
+          ".read": "auth != null",
+          ".write": "auth != null && $room.matches(/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/) && !data.exists() && newData.child('host').val() === auth.uid",
+          ".validate": "newData.hasChildren(['host', 'created', 'mapId'])",
+          "host": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+          "created": { ".validate": "newData.isNumber() && newData.val() >= now - 10000 && newData.val() <= now + 1000" },
+          "mapId": { ".validate": "newData.isString() && newData.val().matches(/^(ward|archive|mall|plant)$/)" },
+          "$other": { ".validate": false }
+        },
+        "guest": {
+          ".read": "auth != null && root.child('ninthRooms').child($room).child('header').exists()",
+          ".write": "auth != null && !data.exists() && newData.val() === auth.uid && root.child('ninthRooms').child($room).child('header/host').exists() && root.child('ninthRooms').child($room).child('header/host').val() !== auth.uid && !root.child('ninthRooms').child($room).child('closed').exists() && root.child('ninthRooms').child($room).child('header/created').val() + 1500000 > now",
+          ".validate": "newData.isString()"
+        },
+        "closed": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === root.child('ninthRooms').child($room).child('header/host').val() && newData.val() === true"
+        },
+        "hostSeen": {
+          ".read": "auth != null && (auth.uid === root.child('ninthRooms').child($room).child('header/host').val() || auth.uid === root.child('ninthRooms').child($room).child('guest').val())",
+          ".write": "auth != null && auth.uid === root.child('ninthRooms').child($room).child('header/host').val() && newData.isNumber() && newData.val() >= now - 10000 && newData.val() <= now + 1000"
+        },
+        "guestSeen": {
+          ".read": "auth != null && (auth.uid === root.child('ninthRooms').child($room).child('header/host').val() || auth.uid === root.child('ninthRooms').child($room).child('guest').val())",
+          ".write": "auth != null && auth.uid === root.child('ninthRooms').child($room).child('guest').val() && newData.isNumber() && newData.val() >= now - 10000 && newData.val() <= now + 1000"
+        },
+        "guestDeck": {
+          ".read": "auth != null && auth.uid === root.child('ninthRooms').child($room).child('header/host').val()",
+          ".write": "auth != null && auth.uid === root.child('ninthRooms').child($room).child('guest').val() && !data.exists() && !root.child('ninthRooms').child($room).child('closed').exists() && newData.isString() && newData.val().matches(/^[a-z0-9-]+(,[a-z0-9-]+){7}$/) && newData.val().length <= 160"
+        },
+        "guestCommand": {
+          ".read": "auth != null && auth.uid === root.child('ninthRooms').child($room).child('header/host').val()",
+          ".write": "auth != null && auth.uid === root.child('ninthRooms').child($room).child('guest').val() && !root.child('ninthRooms').child($room).child('closed').exists() && newData.isString() && newData.val().length <= 512"
+        },
+        "guestView": {
+          ".read": "auth != null && (auth.uid === root.child('ninthRooms').child($room).child('guest').val() || auth.uid === root.child('ninthRooms').child($room).child('header/host').val())",
+          ".write": "auth != null && auth.uid === root.child('ninthRooms').child($room).child('header/host').val() && !root.child('ninthRooms').child($room).child('closed').exists() && newData.isString() && newData.val().length <= 100000"
+        }
+      }
+    }
+  }
+}
